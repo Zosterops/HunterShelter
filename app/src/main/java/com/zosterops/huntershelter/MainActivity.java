@@ -3,10 +3,13 @@ package com.zosterops.huntershelter;
 
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.opengl.GLES20;
 import android.opengl.Matrix;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Surface;
 
 import com.google.vrtoolkit.cardboard.CardboardActivity;
 import com.google.vrtoolkit.cardboard.CardboardView;
@@ -31,13 +34,14 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     private float[] mHeadView;
     private float[] mView;
     private float[] mCamera;
+    private MediaPlayer mMediaPlayer;
     private FloatBuffer vertexBuffer, textureVerticesBuffer;
     private ShortBuffer drawListBuffer;
     static final int COORDS_PER_VERTEX = 2;
     private final int vertexStride = COORDS_PER_VERTEX * 4; // 4 bytes per vertex
 
 
-    private SurfaceTexture surface;
+    private SurfaceTexture mSurface;
     private Camera camera;
     static float squareVertices[] = { // in counterclockwise order:
             -1.0f, -1.0f,   // 0.left - mid
@@ -100,20 +104,30 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
     public void startCamera(int texture)
     {
-        surface = new SurfaceTexture(texture);
-        surface.setOnFrameAvailableListener(this);
+        String url = "https://archive.org/download/Pepa-creativeCommonsMp4956/Pepa-creativeCommonsMp4956.mp4"; // your URL here
+        mSurface = new SurfaceTexture(texture);
+        mSurface.setOnFrameAvailableListener(this);
 
-        camera = Camera.open();
-
+        //camera = Camera.open();
+        mMediaPlayer = new MediaPlayer();
+        Surface surface = new Surface(mSurface);
+        mMediaPlayer.setSurface(surface);
+        surface.release();
         try
         {
-            camera.setPreviewTexture(surface);
-            camera.startPreview();
+
+            mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+            mMediaPlayer.setDataSource(url);
+            mMediaPlayer.prepare();
+
+            //camera.setPreviewTexture(surface);
+            //camera.startPreview();
         }
         catch (IOException ioe)
         {
-            Log.w("MainActivity","CAM LAUNCH FAILED");
+            Log.w("MainActivity","MediaPlayer Launched FAILED");
         }
+        mMediaPlayer.start();
     }
 
     @Override
@@ -138,8 +152,8 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
         float[] mtx = new float[16];
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
-        surface.updateTexImage();
-        surface.getTransformMatrix(mtx);
+        mSurface.updateTexImage();
+        mSurface.getTransformMatrix(mtx);
     }
 
     @Override
