@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">HunterShelter</string>
+    <string name="title_activity_config_activty">ConfigActivty</string>
+
+    <string name="hello_world">IP Adress</string>
+    <string name="action_settings">Settings</string>
 </resources>

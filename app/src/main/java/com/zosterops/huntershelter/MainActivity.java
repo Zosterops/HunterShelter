@@ -3,18 +3,32 @@ package com.zosterops.huntershelter;
 
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
+import android.hardware.SensorEvent;
+import android.media.MediaPlayer;
+import android.net.Uri;
 import android.opengl.GLES20;
 import android.opengl.Matrix;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Surface;
+import android.view.SurfaceHolder;
+import android.widget.VideoView;
 
 import com.google.vrtoolkit.cardboard.CardboardActivity;
 import com.google.vrtoolkit.cardboard.CardboardView;
 import com.google.vrtoolkit.cardboard.Eye;
 import com.google.vrtoolkit.cardboard.HeadTransform;
 import com.google.vrtoolkit.cardboard.Viewport;
+import com.google.vrtoolkit.cardboard.sensors.HeadTracker;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.DataInputStream;
+import java.io.DataOutput;
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
@@ -23,7 +37,7 @@ import java.nio.ShortBuffer;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
-public class MainActivity extends CardboardActivity implements CardboardView.StereoRenderer, SurfaceTexture.OnFrameAvailableListener {
+public class MainActivity extends CardboardActivity implements CardboardView.StereoRenderer, SurfaceTexture.OnFrameAvailableListener, MediaPlayer.OnPreparedListener {
 
     private static final String TAG = "MainActivity";
     private static final int GL_TEXTURE_EXTERNAL_OES = 0x8D65;
@@ -37,8 +51,8 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     private final int vertexStride = COORDS_PER_VERTEX * 4; // 4 bytes per vertex
 
 
-    private SurfaceTexture surface;
-    private Camera camera;
+    private SurfaceTexture mSurface;
+
     static float squareVertices[] = { // in counterclockwise order:
             -1.0f, -1.0f,   // 0.left - mid
             1.0f, -1.0f,   // 1. right - mid
@@ -97,23 +111,42 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
                     "  gl_FragColor = texture2D( s_texture, textureCoordinate );\n" +
                     //"  gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n" +
                     "}";
+    private HeadTransform head;
+    private NetworkThread networkThread;
+    private MediaPlayer mMediaPlayer;
 
     public void startCamera(int texture)
     {
-        surface = new SurfaceTexture(texture);
-        surface.setOnFrameAvailableListener(this);
-
-        camera = Camera.open();
+        mSurface = new SurfaceTexture(texture);
+        mSurface.setOnFrameAvailableListener(this);
+        mMediaPlayer = new MediaPlayer();
+        Surface surface = new Surface(mSurface);
+        mMediaPlayer.setSurface(surface);
+        surface.release();
 
         try
         {
-            camera.setPreviewTexture(surface);
-            camera.startPreview();
+
+            mMediaPlayer.setDataSource("rtsp://10.0.1.5:5000/");
+            mMediaPlayer.prepare();
+            mMediaPlayer.start();
+
+            //camera.setPreviewTexture(surface);
+            //camera.startPreview();
         }
         catch (IOException ioe)
         {
-            Log.w("MainActivity","CAM LAUNCH FAILED");
+            Log.w("MainActivity","MediaPlayer Launched FAILED");
         }
+
+    }
+
+
+
+    @Override
+    public void onPrepared(MediaPlayer mp) {
+        Log.e("Ta race", "MediaPlayer Prepared");
+        //mp.start();
     }
 
     @Override
@@ -124,13 +157,24 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         cardboardView.setRenderer(this);
         setCardboardView(cardboardView);
 
+        networkThread = new NetworkThread();
+        networkThread.start();
+
         mCamera = new float[16];
         mView = new float[16];
         mHeadView = new float[16];
     }
 
     @Override
+    public void onDestroy(){
+        super.onDestroy();
+        networkThread.close();
+        networkThread = null;
+    }
+
+    @Override
     public void onNewFrame(HeadTransform headTransform) {
+
         headTransform.getHeadView(mHeadView, 0);
 
         // Build the camera matrix and apply it to the ModelView.
@@ -138,8 +182,14 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
         float[] mtx = new float[16];
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
-        surface.updateTexImage();
-        surface.getTransformMatrix(mtx);
+        mSurface.updateTexImage();
+        mSurface.getTransformMatrix(mtx);
+
+        float[] test = new float[3];
+        headTransform.getEulerAngles(test, 0);
+        if(networkThread != null){
+            networkThread.setRegValue(test);
+        }
     }
 
     @Override
@@ -161,7 +211,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         mTextureCoordHandle = GLES20.glGetAttribLocation(mProgram, "inputTextureCoordinate");
         GLES20.glEnableVertexAttribArray(mTextureCoordHandle);
         GLES20.glVertexAttribPointer(mTextureCoordHandle, COORDS_PER_VERTEX, GLES20.GL_FLOAT,
-                false,vertexStride, textureVerticesBuffer);
+                false, vertexStride, textureVerticesBuffer);
 
         mColorHandle = GLES20.glGetAttribLocation(mProgram, "s_texture");
 
@@ -279,4 +329,5 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     public void onFrameAvailable(SurfaceTexture surfaceTexture) {
         this.getCardboardView().requestRender();
     }
+
 }
