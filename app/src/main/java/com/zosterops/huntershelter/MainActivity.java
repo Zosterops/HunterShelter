@@ -1,38 +1,35 @@
 package com.zosterops.huntershelter;
 
 
+import android.graphics.Bitmap;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
-import android.hardware.SensorEvent;
+import android.media.MediaCodec;
+import android.media.MediaExtractor;
+import android.media.MediaFormat;
 import android.media.MediaPlayer;
-import android.net.Uri;
 import android.opengl.GLES20;
 import android.opengl.Matrix;
 import android.os.Bundle;
+import android.os.ParcelFileDescriptor;
 import android.util.Log;
 import android.view.Surface;
-import android.view.SurfaceHolder;
-import android.widget.VideoView;
 
 import com.google.vrtoolkit.cardboard.CardboardActivity;
 import com.google.vrtoolkit.cardboard.CardboardView;
 import com.google.vrtoolkit.cardboard.Eye;
 import com.google.vrtoolkit.cardboard.HeadTransform;
 import com.google.vrtoolkit.cardboard.Viewport;
-import com.google.vrtoolkit.cardboard.sensors.HeadTracker;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.DataInputStream;
-import java.io.DataOutput;
-import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
+import java.util.Arrays;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -40,15 +37,17 @@ import javax.microedition.khronos.opengles.GL10;
 public class MainActivity extends CardboardActivity implements CardboardView.StereoRenderer, SurfaceTexture.OnFrameAvailableListener, MediaPlayer.OnPreparedListener {
 
     private static final String TAG = "MainActivity";
+    protected static final int port = 1992;
+    protected static final String ip = "10.0.1.4";
+
+
     private static final int GL_TEXTURE_EXTERNAL_OES = 0x8D65;
 
-    private float[] mHeadView;
     private float[] mView;
     private float[] mCamera;
     private FloatBuffer vertexBuffer, textureVerticesBuffer;
     private ShortBuffer drawListBuffer;
     static final int COORDS_PER_VERTEX = 2;
-    private final int vertexStride = COORDS_PER_VERTEX * 4; // 4 bytes per vertex
 
 
     private SurfaceTexture mSurface;
@@ -58,24 +57,8 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
             1.0f, -1.0f,   // 1. right - mid
             -1.0f, 1.0f,   // 2. left - top
             1.0f, 1.0f,   // 3. right - top
-//
-//    	 -1.0f, -1.0f, //4. left - bottom
-//    	 1.0f , -1.0f, //5. right - bottom
-
-
-//       -1.0f, -1.0f,  // 0. left-bottom
-//        0.0f, -1.0f,   // 1. mid-bottom
-//       -1.0f,  1.0f,   // 2. left-top
-//        0.0f,  1.0f,   // 3. mid-top
-
-            //1.0f, -1.0f,  // 4. right-bottom
-            //1.0f, 1.0f,   // 5. right-top
-
     };
     private int mProgram;
-    private int mPositionHandle;
-    private int mColorHandle;
-    private int mTextureCoordHandle;
     private int texture;
 
     private short drawOrder[] =  {0, 2, 1, 1, 2, 3 }; // order to draw vertices
@@ -85,33 +68,8 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
             1.0f, 1.0f,  // B. right-bottom
             0.0f, 0.0f,  // C. left-top
             1.0f, 0.0f   // D. right-top
-
-//        1.0f,  1.0f,
-//        1.0f,  0.0f,
-//        0.0f,  1.0f,
-//        0.0f,  0.0f
     };
 
-    private final String vertexShaderCode =
-            "attribute vec4 position;" +
-                    "attribute vec2 inputTextureCoordinate;" +
-                    "varying vec2 textureCoordinate;" +
-                    "void main()" +
-                    "{"+
-                    "gl_Position = position;"+
-                    "textureCoordinate = inputTextureCoordinate;" +
-                    "}";
-
-    private final String fragmentShaderCode =
-            "#extension GL_OES_EGL_image_external : require\n"+
-                    "precision mediump float;" +
-                    "varying vec2 textureCoordinate;                            \n" +
-                    "uniform samplerExternalOES s_texture;               \n" +
-                    "void main(void) {" +
-                    "  gl_FragColor = texture2D( s_texture, textureCoordinate );\n" +
-                    //"  gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n" +
-                    "}";
-    private HeadTransform head;
     private NetworkThread networkThread;
     private MediaPlayer mMediaPlayer;
 
@@ -119,34 +77,16 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     {
         mSurface = new SurfaceTexture(texture);
         mSurface.setOnFrameAvailableListener(this);
-        mMediaPlayer = new MediaPlayer();
-        Surface surface = new Surface(mSurface);
-        mMediaPlayer.setSurface(surface);
-        surface.release();
-
-        try
-        {
-
-            mMediaPlayer.setDataSource("rtsp://10.0.1.5:5000/");
-            mMediaPlayer.prepare();
-            mMediaPlayer.start();
-
-            //camera.setPreviewTexture(surface);
-            //camera.startPreview();
-        }
-        catch (IOException ioe)
-        {
-            Log.w("MainActivity","MediaPlayer Launched FAILED");
-        }
+        Thread toto = new DisplayThread();
+        toto.start();
 
     }
-
 
 
     @Override
     public void onPrepared(MediaPlayer mp) {
         Log.e("Ta race", "MediaPlayer Prepared");
-        //mp.start();
+        mMediaPlayer.start();
     }
 
     @Override
@@ -162,7 +102,6 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
         mCamera = new float[16];
         mView = new float[16];
-        mHeadView = new float[16];
     }
 
     @Override
@@ -174,8 +113,6 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
     @Override
     public void onNewFrame(HeadTransform headTransform) {
-
-        headTransform.getHeadView(mHeadView, 0);
 
         // Build the camera matrix and apply it to the ModelView.
         Matrix.setLookAtM(mCamera, 0, 0.0f, 0.0f, 0.01f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
@@ -202,20 +139,16 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         GLES20.glBindTexture(GL_TEXTURE_EXTERNAL_OES, texture);
 
 
-        mPositionHandle = GLES20.glGetAttribLocation(mProgram, "position");
+        int mPositionHandle = GLES20.glGetAttribLocation(mProgram, "position");
         GLES20.glEnableVertexAttribArray(mPositionHandle);
+        int vertexStride = COORDS_PER_VERTEX * 4;
         GLES20.glVertexAttribPointer(mPositionHandle, COORDS_PER_VERTEX, GLES20.GL_FLOAT,
-                false,vertexStride, vertexBuffer);
+                false, vertexStride, vertexBuffer);
 
-
-        mTextureCoordHandle = GLES20.glGetAttribLocation(mProgram, "inputTextureCoordinate");
+        int mTextureCoordHandle = GLES20.glGetAttribLocation(mProgram, "inputTextureCoordinate");
         GLES20.glEnableVertexAttribArray(mTextureCoordHandle);
         GLES20.glVertexAttribPointer(mTextureCoordHandle, COORDS_PER_VERTEX, GLES20.GL_FLOAT,
                 false, vertexStride, textureVerticesBuffer);
-
-        mColorHandle = GLES20.glGetAttribLocation(mProgram, "s_texture");
-
-
 
         GLES20.glDrawElements(GLES20.GL_TRIANGLES, drawOrder.length,
                 GLES20.GL_UNSIGNED_SHORT, drawListBuffer);
@@ -231,12 +164,10 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
     @Override
     public void onFinishFrame(Viewport viewport) {
-
     }
 
     @Override
     public void onSurfaceChanged(int i, int i2) {
-
     }
 
     @Override
@@ -262,7 +193,22 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         textureVerticesBuffer.put(textureVertices);
         textureVerticesBuffer.position(0);
 
+        String vertexShaderCode = "attribute vec4 position;" +
+                "attribute vec2 inputTextureCoordinate;" +
+                "varying vec2 textureCoordinate;" +
+                "void main()" +
+                "{" +
+                "gl_Position = position;" +
+                "textureCoordinate = inputTextureCoordinate;" +
+                "}";
         int vertexShader = loadGLShader(GLES20.GL_VERTEX_SHADER, vertexShaderCode);
+        String fragmentShaderCode = "#extension GL_OES_EGL_image_external : require\n" +
+                "precision mediump float;" +
+                "varying vec2 textureCoordinate;                            \n" +
+                "uniform samplerExternalOES s_texture;               \n" +
+                "void main(void) {" +
+                "  gl_FragColor = texture2D( s_texture, textureCoordinate );\n" +
+                "}";
         int fragmentShader = loadGLShader(GLES20.GL_FRAGMENT_SHADER, fragmentShaderCode);
 
         mProgram = GLES20.glCreateProgram();             // create empty OpenGL ES Program
@@ -281,7 +227,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         GLES20.glGenTextures(1,texture, 0);
         GLES20.glBindTexture(GL_TEXTURE_EXTERNAL_OES, texture[0]);
         GLES20.glTexParameterf(GL_TEXTURE_EXTERNAL_OES,
-                GL10.GL_TEXTURE_MIN_FILTER,GL10.GL_LINEAR);
+                GL10.GL_TEXTURE_MIN_FILTER, GL10.GL_LINEAR);
         GLES20.glTexParameterf(GL_TEXTURE_EXTERNAL_OES,
                 GL10.GL_TEXTURE_MAG_FILTER, GL10.GL_LINEAR);
         GLES20.glTexParameteri(GL_TEXTURE_EXTERNAL_OES,
@@ -330,4 +276,49 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         this.getCardboardView().requestRender();
     }
 
+
+    class DisplayThread extends Thread {
+
+        @Override
+        public void run() {
+            try {
+                decode();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        public short[] decode() throws IOException {
+            MediaExtractor extractor;
+            MediaCodec codec;
+
+            extractor = new MediaExtractor();
+
+            Socket socket = new Socket(ip, port);
+            ParcelFileDescriptor pfd = ParcelFileDescriptor.fromSocket(socket);
+
+            extractor.setDataSource(pfd.getFileDescriptor());
+
+            MediaFormat format = extractor.getTrackFormat(0);
+            String mime = format.getString(MediaFormat.KEY_MIME);
+            codec = MediaCodec.createDecoderByType(mime);
+            Surface surface = new Surface(mSurface);
+            codec.configure(format, surface, null /* crypto */, 0 /* flags */);
+            surface.release();
+            codec.start();
+
+            for (;;) {
+                MediaCodec.BufferInfo toto = new MediaCodec.BufferInfo();
+                int outputBufferIndex = codec.dequeueOutputBuffer(toto,-1L);
+                if (outputBufferIndex >= 0) {
+                    // if API level >= 21, get output buffer here
+                    ByteBuffer outputBuffer = codec.getOutputBuffer(outputBufferIndex);
+                    // outputBuffer is ready to be processed or rendered.
+
+                    codec.releaseOutputBuffer(outputBufferIndex, true);
+                }
+                Log.d("FUCK",toto.toString());
+            }
+        }
+    }
 }
