@@ -1,7 +1,11 @@
 <resources>
-    <string name="app_name">HunterShelter</string>
+    <string name="app_name">Zosterops</string>
+    <string name="app_name_sub">Hunter Shelter</string>
     <string name="title_activity_config_activty">ConfigActivty</string>
 
     <string name="hello_world">IP Adress</string>
     <string name="action_settings">Settings</string>
+
+<!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

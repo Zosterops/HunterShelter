@@ -2,7 +2,7 @@
 
     <!-- Base application theme. -->
     <style name="AppTheme" parent="android:Theme.Holo.NoActionBar.Fullscreen">
-        <!-- Customize your theme here. -->
+            <item name="android:background">#ff0a1809</item>
     </style>
 
 </resources>

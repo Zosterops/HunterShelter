@@ -157,8 +157,8 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         cardboardView.setRenderer(this);
         setCardboardView(cardboardView);
 
-        networkThread = new NetworkThread();
-        networkThread.start();
+        //networkThread = new NetworkThread();
+        //networkThread.start();
 
         mCamera = new float[16];
         mView = new float[16];

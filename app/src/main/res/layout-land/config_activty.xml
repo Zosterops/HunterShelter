@@ -1,5 +1,5 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
+    xmlns:tools="http://schemas.android.com/tools" android:layout_width="fill_parent"
     android:layout_height="match_parent"
     tools:context="com.zosterops.huntershelter.ConfigActivty"
     android:orientation="vertical">
@@ -11,24 +11,32 @@
         android:layout_gravity="center|top"
         android:layout_weight="0.4">
 
-        <ImageView
+        <LinearLayout
+            android:orientation="horizontal"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/imageView"
-            android:layout_gravity="center_horizontal"
-            android:src="@drawable/ic_bird"
-            android:layout_marginTop="80dp" />
+            android:layout_marginTop="20dp"
+            android:layout_gravity="center_horizontal">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/app_name"
-            android:textAllCaps="true"
-            android:fontFamily="sans-serif-thin"
-            android:id="@+id/app_name"
-            android:textSize="50sp"
-            android:textColor="#ffffff"
-            android:layout_gravity="center" />
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="50sp"
+                android:id="@+id/imageView"
+                android:layout_gravity="center_horizontal"
+                android:src="@drawable/ic_bird"
+                android:height="50sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/app_name"
+                android:textAllCaps="true"
+                android:fontFamily="sans-serif-thin"
+                android:id="@+id/app_name"
+                android:textSize="50sp"
+                android:textColor="#ffffff"
+                android:layout_gravity="center" />
+        </LinearLayout>
 
         <TextView
             android:layout_width="wrap_content"
@@ -46,9 +54,9 @@
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
         android:layout_marginTop="10dp"
         android:layout_marginBottom="10dp"
-        android:gravity="center_horizontal"
         android:layout_weight="0.2">
 
         <TextView
@@ -58,8 +66,7 @@
             android:text="Step 1 "
             android:id="@+id/step"
             android:layout_centerVertical="true"
-            android:layout_centerHorizontal="true"
-            android:layout_marginBottom="5dp" />
+            android:layout_centerHorizontal="true" />
 
         <TextView
             android:layout_width="wrap_content"
