@@ -1,0 +1,8 @@
+<resources>
+
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="android:Theme.Holo.NoActionBar.Fullscreen">
+            <item name="android:background">#ff0a1809</item>
+    </style>
+
+</resources>

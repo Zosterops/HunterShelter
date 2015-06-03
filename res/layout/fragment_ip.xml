@@ -1,0 +1,90 @@
+<RelativeLayout
+android:orientation="vertical"
+xmlns:android="http://schemas.android.com/apk/res/android"
+xmlns:tools="http://schemas.android.com/tools" android:layout_width="wrap_content"
+android:layout_height="wrap_content" tools:context="com.zosterops.huntershelter.IpFragment"
+
+    >
+
+<TextView
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="IP Address"
+    android:id="@+id/textView6"
+    android:layout_alignParentTop="false"
+    android:layout_alignParentLeft="false"
+    android:layout_alignParentStart="false"
+    android:layout_centerHorizontal="true"
+    android:layout_marginTop="40dp" />
+
+<LinearLayout
+    android:orientation="horizontal"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center_vertical"
+    android:layout_centerHorizontal="true"
+    android:layout_below="@+id/textView6"
+    android:id="@+id/linearLayout">
+
+    <EditText
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:inputType="number"
+        android:ems="3"
+        android:id="@+id/ip1"
+        android:imeOptions="actionNext"
+        />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="."
+        android:id="@+id/textView3" />
+
+    <EditText
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:inputType="number"
+        android:ems="3"
+        android:id="@+id/ip2"
+        android:imeOptions="actionNext" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="."
+        android:id="@+id/textView4" />
+
+    <EditText
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:inputType="number"
+        android:ems="3"
+        android:id="@+id/ip3"
+        android:imeOptions="actionNext" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="."
+        android:id="@+id/textView5" />
+
+    <EditText
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:inputType="number"
+        android:ems="3"
+        android:id="@+id/ip4"
+        android:imeOptions="actionGo"/>
+</LinearLayout>
+
+<Button
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="OK"
+    android:id="@+id/button"
+    android:layout_below="@+id/linearLayout"
+    android:layout_centerHorizontal="true"
+    android:layout_margin="10dp" />
+
+</RelativeLayout>
